@@ -1,0 +1,186 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+Each year, The College of Wooster buys information on over 100,000 U.S. high school students, through The College Board (which runs the SAT and ACT tests) and other organizations. Wooster’s Admissions office reaches out in various ways to these prospects, and a small percentage eventually apply to Wooster. 
+
+Your task is to analyze the data, finding actionable insights, that would help the Admissions Staff to refine their name-buying practices and associated outreach. Location is likely important, and you may find other criteria that are also relevant. There are about 3.6 million U.S. high school graduates each year, so Wooster purchases information on only a small fraction of the available pool. 
+
+Information about the data:
+
+Anonymized data is provided on 263,139 domestic prospects for the College’s classes of 2021 and 2022. In order, the data attributes are as follows:
+
+•	ID number (sequential positive integers)
+•	Class of 2022 prospect (binary, as opposed to class of 2021 prospect)
+•	Self-identification as male
+•	Underrepresented minority status (Black/African-American and/or Latino/Latina)
+•	Home zip code (five-digit number)
+•	Home state (two-letter postal abbreviation, this is the only non-numeric column of data)
+•	Whether the student appeared on lists of students scoring 28-36 or 23027 on the ACT test (Note: not all students with ACT scores in those ranges appear on these lists.)
+•	Sophomore year in high school when first contacted (as opposed to junior year)
+•	Code number for the student’s first-choice major interest, if any (see list of major codes)
+
+Using US Census Bureau data, the following are provided about the student’s home zip code area:
+
+•	Population density (person per square mile)
+•	Percentage of Black/African-American residents
+•	Percentage of Latino/Latina residents
+•	Percentage of local students attending private high schools
+•	Percentage of the adult population holding at least a bachelor’s (4-year college) degree
+•	Percentage of the adult population holding an advanced degree (e.g., M.A., Ph.D., M.D)
+•	Median income for households, families, and families with children under 18 at home
+•	Percentage by economic class (Lower, Lower-Middle, Middle, Upper-Middle, and Upper)
+•	CBSA number (a census reference to a city/town or local area, see provided list)
+•	Whether the CBSA is in a metropolitan area, as oppose to a micropolitan (more rural) area
+•	CSA number (Combined Statistical Area, for larger metro regions, see provided list), if applicable
+•	Distance to Wooster, in miles
+•	Latitude (north) and Longitude (west) coordinates of zip code (maybe useful for any mapping)
+
+The associated dependent variables are as follows:
+•	Whether the student made an inquiry for more information about Wooster
+•	Whether the student eventually applied for admission to Wooster (our key target variable)
+
+
+1. Loading in Packages: 
+```{r}
+library(dplyr)
+Wooster4<- read.csv("/Users/sewii/Documents/CLASSES_Spring2022/Data325_AppliedDataScience/Admissions_data_main_4.csv", header=TRUE)
+
+Wooster3<- read.csv("/Users/sewii/Documents/CLASSES_Spring2022/Data325_AppliedDataScience/Admissions_data_main_3.csv", header=TRUE) 
+
+Wooster2 <-read.csv("/Users/sewii/Documents/CLASSES_Spring2022/Data325_AppliedDataScience/Admissions_data_main_2.csv", header=TRUE)
+
+Wooster1<- read.csv("/Users/sewii/Documents/CLASSES_Spring2022/Data325_AppliedDataScience/Admissions_data_main_1.csv", header=TRUE)
+
+Wooster <- bind_rows(Wooster1, Wooster2, Wooster3, Wooster4)
+
+
+```
+
+2. EDA 
+- How can we increase diversity on campus 
+```{r}
+WhoApplied <- Wooster%>% count(Inquiry, Applicant) #n is count 
+WhoApplied
+
+#gf_bar( WhoApplied~ Inquiry + Applicant, data = Wooster)
+
+```
+Many people who inquire do not apply. Of the 10402, only 2,432 people applied. This is approximately a 23.3% success rate using your current recruiting methods . 
+
+```{r}
+library(tidyverse)
+library(mosaic)
+summary(Wooster$HH..)
+
+MedianHHIncomeRange <- ifelse(Wooster$HH.. <= 50000, "low", ifelse(Wooster$HH.. <= 135000, "mid","high")) #mid high and low income 
+WoosterWithIncome <- cbind(Wooster, MedianHHIncomeRange) #new Dataset with income 
+
+WhoApplied2 <- WoosterWithIncome%>% count(Inquiry, Applicant,  MedianHHIncomeRange ) #n is count 
+WhoApplied2
+
+WoosterWithIncome %>% select(Inquiry, Applicant,)
+tally(  ~ Inquiry + Applicant + MedianHHIncomeRange, data = WoosterWithIncome)
+gf_bar( ~  Applicant, fill = ~ MedianHHIncomeRange, data = WoosterWithIncome, position=position_dodge())
+
+gf_bar( ~  Applicant, fill = ~ MedianHHIncomeRange, data = WoosterWithIncome, position=position_dodge())
+
+library("RColorBrewer")
+WooColors <- c(yellow = "#F8C814", black = "#090807", brown = "#84681B")
+barplot(xtabs(~  Applicant + MedianHHIncomeRange, data = WoosterWithIncome), col=WooColors)
+```
+Most people who apply to collge are in the middle income demographic 
+
+
+
+```{r}
+tally(  ~ Applicant + State, data = WoosterWithIncome)
+model <- lm(Applicant ~ WooDist, data = WoosterWithIncome)
+summary(model)
+
+gf_boxplot( WooDist ~ as.factor(Applicant), data = WoosterWithIncome, fill="#84681B", col ="#090807")+xlab("Application Success")+ ylab("Distance from Wooster")
+```
+Ohio, Pennsylvania, and Michigan have the highest application rates and all of these states are close to OH. 
+
+People who live closer are more likely to apply. 
+
+```{r}
+tally(  ~ Applicant + URM, data = WoosterWithIncome)
+tally(  ~ Applicant + Male, data = WoosterWithIncome)
+
+
+```
+
+```{r}
+tally(Applicant ~ X.PrivHS, data = WoosterWithIncome)
+```
+
+```{r}
+tally( ~ Applicant + X28.36, data = WoosterWithIncome)
+
+tally( ~ Applicant + X23.27, data = WoosterWithIncome)
+
+WoosterWithIncome
+```
+
+
+
+
+```{r}
+WoosterWithIncome  %>% select(MyID, C.O..22, Male, URM,Inquiry, Applicant, MedianHHIncomeRange  )
+
+
+WhoApplied
+WhoApplied2
+```
+
+
+```{r}
+
+
+```
+
+
+```{r}
+library(devtools)
+devtools::install_github("UrbanInstitute/urbnmapr")
+
+library(tidyverse)
+library(urbnmapr)
+library(ggplot2)
+
+ggplot() + 
+  geom_polygon(data = urbnmapr::states, mapping = aes(x = long, y = lat, group = group),
+		           fill = "grey", color = "white") +
+  coord_map(projection = "albers", lat0 = 39, lat1 = 45)
+
+
+household_data <- left_join(countydata, counties, by = "county_fips")
+WoosterWithIncome
+
+WoosterWithIncome[1:100, ] %>%
+  ggplot(aes(Long, Lat, fill = Density)) +
+  geom_polygon(color = NA) +
+  coord_map(projection = "albers", lat0 = 39, lat1 = 45) +
+  labs(fill = "Median Household Income")
+
+
+#########################################################
+plot1<-ggplot(g3, aes(variable, country, fill= value)) + 
+ geom_tile()
+#plot2<- plot1+xlab(“Year”)+
+ #ylab(“Country”)+
+# ggtitle(“Per Capita Carbon dioxide Emission (Tonnes per person) from 1950–2010 \n in the 25 Most Populous Countries”)+
+ #labs(fill = “Per Capita Emission \n(Tonnes per person)”)
+
+########################################
+###################
+WoosterWithIncome
+
+ggplot(data = WoosterWithIncome,
+            mapping = aes(x = Long, y = Lat,
+                          group = group, fill = State))
+
+```
+
+
